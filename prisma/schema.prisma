@@ -1,0 +1,307 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum EventCategory {
+  CLASS
+  EXAM
+  ASSIGNMENT
+  MEETING
+  PERSONAL
+  OTHER
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+enum CertificateCategory {
+  COURSE
+  WORKSHOP
+  COMPETITION
+  INTERNSHIP
+  OTHER
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+}
+
+model User {
+  id                String   @id @default(uuid())
+  clerkId           String   @unique
+  email             String   @unique
+  name              String?
+  username          String?  @unique
+  avatarUrl         String?
+  bio               String?
+  college           String?
+  branch            String?
+  year              Int?
+  resumeUrl         String?
+  isPortfolioPublic Boolean  @default(false)
+  socialLinks       Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  courses      Course[]
+  tasks        Task[]
+  events       Event[]
+  projects     Project[]
+  skills       Skill[]
+  certificates Certificate[]
+  achievements Achievement[]
+  notes        Note[]
+  goals        Goal[]
+  habits       Habit[]
+  habitLogs    HabitLog[]
+
+  @@index([clerkId])
+  @@index([username])
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  code        String?
+  instructor  String?
+  semester    String?
+  credits     Int?
+  description String?
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tasks       Task[]
+  notes       Note[]
+  @@index([userId])
+}
+
+model Task {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId       String?
+  course         Course?      @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?
+  dueDate        DateTime?
+  priority       TaskPriority @default(MEDIUM)
+  status         TaskStatus   @default(TODO)
+  estimatedHours Float?
+  tags           String[]
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  subtasks       Subtask[]
+
+  @@index([userId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([userId, status])
+}
+
+model Subtask {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([taskId])
+}
+
+model Event {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  startTime       DateTime
+  endTime         DateTime
+  allDay          Boolean       @default(false)
+  category        EventCategory @default(OTHER)
+  location        String?
+  meetingUrl      String?
+  recurrenceRule  String?
+  reminderMinutes Int?
+  color           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  @@index([userId])
+  @@index([startTime])
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  techStack   String[]
+  role        String?
+  teamMembers String[]
+  githubUrl   String?
+  liveUrl     String?
+  imageUrl    String?
+  status      ProjectStatus @default(PLANNING)
+  isPublic    Boolean       @default(false)
+  featured    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  tasks       Task[]
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model Skill {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  category  String?
+  level     SkillLevel @default(INTERMEDIATE)
+  isPublic  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model Certificate {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  issuer          String
+  issueDate       DateTime
+  expiryDate      DateTime?
+  credentialId    String?
+  verificationUrl String?
+  fileUrl         String?
+  category        CertificateCategory @default(OTHER)
+  isPublic        Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model Achievement {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  date         DateTime?
+  organization String?
+  imageUrl     String?
+  isPublic     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String?
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  title     String
+  content   String
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Goal {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  targetDate  DateTime?
+  status      GoalStatus @default(ACTIVE)
+  progress    Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  @@index([userId])
+  @@index([status])
+}
+
+model Habit {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  frequency     HabitFrequency @default(DAILY)
+  targetPerWeek Int?
+  color         String?
+  archived      Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  logs          HabitLog[]
+  @@index([userId])
+}
+
+model HabitLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  completed Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, habitId, date])
+  @@index([userId])
+  @@index([habitId])
+}
